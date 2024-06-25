@@ -27,6 +27,14 @@ export default {
         { title: "Card 1", content: "This is card 1 content" },
         { title: "Card 2", content: "This is card 2 content" },
         { title: "Card 3", content: "This is card 3 content" },
+        { title: "Card 1", content: "This is card 1 content" },
+        { title: "Card 2", content: "This is card 2 content" },
+        { title: "Card 3", content: "This is card 3 content" },
+        { title: "Card 1", content: "This is card 1 content" },
+        { title: "Card 2", content: "This is card 2 content" },
+        { title: "Card 3", content: "This is card 3 content" },
+        { title: "Card 1", content: "This is card 1 content" },
+        { title: "Card 2", content: "This is card 2 content" },
         // Add more cards as needed
       ],
     };
