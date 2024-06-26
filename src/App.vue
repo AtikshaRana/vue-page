@@ -1,6 +1,6 @@
 <template>
   <div class="cardsWrap">
-    <div class="productWrap">
+    <div class="productWrap" :class="currentVariantColor">
       <div class="product-image">
         <img alt="socks" :src="image" />
       </div>
@@ -15,11 +15,17 @@
             {{ detail }}
           </li>
         </ul>
-        <div v-for="variant in variants" :key="variant.variantId">
-          <p>{{ variant.variantColor }}</p>
+        <div
+          v-for="variant in variants"
+          :key="variant.variantId"
+          @mouseover="updateImage(variant)"
+        >
+          {{ variant.variantColor }}
         </div>
       </div>
-      <button v-on:click="addToCart">Add to cart</button>
+      <button v-on:click="addToCart" class="add-to-cart-button">
+        Add to cart
+      </button>
       <div class="cart">
         <p>Cart({{ cart }})</p>
       </div>
@@ -48,36 +54,79 @@ export default {
         {
           variantColor: "green",
           variantId: "1",
+          image: require("@/assets/greenSocks.png"),
         },
         {
-          variantColor: "Blue",
+          variantColor: "blue",
           variantId: "2",
+          image: require("@/assets/blueSocks.png"),
         },
       ],
       cart: 0,
+      currentVariantColor: "",
     };
   },
   methods: {
     addToCart() {
       this.cart += 1;
     },
+    updateImage(variant) {
+      this.image = variant.image;
+      this.currentVariantColor = variant.variantColor;
+    },
   },
 };
 </script>
+
 <style>
+.cardsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
 .productWrap {
   display: flex;
-  flex: wrap;
+  flex-wrap: wrap;
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin: 10px;
+  width: 400px;
+  transition: background-color 0.3s ease;
+}
+.productWrap.green {
+  background-color: lightgreen;
+}
+.productWrap.blue {
+  background-color: lightblue;
 }
 .product-image {
   width: 350px;
   height: 350px;
 }
 .product-image img {
-  width: 350px;
-  height: 350px;
+  width: 100%;
+  height: 100%;
 }
-
+.product-info {
+  padding: 10px;
+}
+.add-to-cart-button {
+  background-color: #4caf50;
+  height: 45px;
+  border: none;
+  color: white;
+  padding: 15px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 10px 0;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+.add-to-cart-button:hover {
+  background-color: #45a049;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
