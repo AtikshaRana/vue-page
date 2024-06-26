@@ -1,6 +1,9 @@
 <template>
+  <div class="cart">
+    <p>Cart({{ cart }})</p>
+  </div>
   <div class="cardsWrap">
-    <div class="productWrap" :class="currentVariantColor">
+    <div class="productWrap">
       <div class="product-image">
         <img alt="socks" :src="image" />
       </div>
@@ -16,21 +19,19 @@
           </li>
         </ul>
         <div
+          class="color-circle"
           v-for="variant in variants"
           :key="variant.variantId"
           @mouseover="updateImage(variant)"
-        >
-          {{ variant.variantColor }}
-        </div>
+          :style="{ backgroundColor: variant.variantColor }"
+        ></div>
       </div>
       <button v-on:click="addToCart" class="add-to-cart-button">
         Add to cart
       </button>
-      <div class="cart">
-        <p>Cart({{ cart }})</p>
-      </div>
     </div>
   </div>
+
   <HomePage />
 </template>
 
@@ -52,12 +53,12 @@ export default {
       details: ["80% cotton", "20% Polyester", "Gender-neutral"],
       variants: [
         {
-          variantColor: "green",
+          variantColor: "#4d9f73",
           variantId: "1",
           image: require("@/assets/greenSocks.png"),
         },
         {
-          variantColor: "blue",
+          variantColor: "#44576f",
           variantId: "2",
           image: require("@/assets/blueSocks.png"),
         },
@@ -97,7 +98,7 @@ export default {
   background-color: lightgreen;
 }
 .productWrap.blue {
-  background-color: lightblue;
+  background-color: darkblue;
 }
 .product-image {
   width: 350px;
@@ -107,9 +108,23 @@ export default {
   width: 100%;
   height: 100%;
 }
+.productWrap {
+  background: lightgray;
+}
 .product-info {
   padding: 10px;
 }
+ul {
+  list-style: none;
+}
+.color-circle {
+  width: 50px;
+  height: 50px;
+  margin-top: 10px;
+  border: 2px solid #080800;
+  border-radius: 50%;
+}
+
 .add-to-cart-button {
   background-color: #4caf50;
   height: 45px;
@@ -123,6 +138,11 @@ export default {
   margin: 10px 0;
   cursor: pointer;
   transition: background-color 0.3s ease;
+}
+.cart {
+  width: fit-content;
+  padding: 10px 20px;
+  border: solid 2px gray;
 }
 .add-to-cart-button:hover {
   background-color: #45a049;
