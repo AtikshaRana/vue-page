@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h1>Item List</h1>
     <input
       type="text"
       v-model="searchQuery"
