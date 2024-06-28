@@ -11,7 +11,7 @@
     <!-- Data Category Dropdown -->
     <div class="dropdown">
       <button @click="toggleDropdown('data')" class="dropdown-button">
-        Filter by Data Category
+        Data Category
         <span
           :class="{
             'arrow-up': showDropdown.data,
@@ -34,7 +34,7 @@
     <!-- Event Category Dropdown -->
     <div class="dropdown">
       <button @click="toggleDropdown('event')" class="dropdown-button">
-        Filter by Event Category
+        Event Category
         <span
           :class="{
             'arrow-up': showDropdown.event,
@@ -57,7 +57,7 @@
     <!-- Audience Category Dropdown -->
     <div class="dropdown">
       <button @click="toggleDropdown('audience')" class="dropdown-button">
-        Filter by Audience Category
+        Audience Category
         <span
           :class="{
             'arrow-up': showDropdown.audience,
