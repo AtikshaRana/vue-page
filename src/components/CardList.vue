@@ -21,7 +21,7 @@
       </button>
       <div v-if="showDropdown.data" class="dropdown-content">
         <label
-          v-for="date in uniqueStartDates"
+          v-for="date in [...new Set(uniqueStartDates)]"
           :key="date"
           class="dropdown-item"
         >
@@ -43,14 +43,20 @@
         ></span>
       </button>
       <div v-if="showDropdown.event" class="dropdown-content">
-        <label
-          v-for="type in uniqueEventTypes"
-          :key="type"
-          class="dropdown-item"
-        >
-          <input type="checkbox" v-model="filters.event" :value="type" />
-          {{ type }}
-        </label>
+        <div v-for="type in uniqueEventTypes" :key="type">
+          <label
+            v-for="individualType in [...new Set(type.split(','))]"
+            :key="individualType"
+            class="dropdown-item"
+          >
+            <input
+              type="checkbox"
+              v-model="filters.event"
+              :value="individualType.trim()"
+            />
+            {{ individualType.trim() }}
+          </label>
+        </div>
       </div>
     </div>
 
@@ -66,14 +72,27 @@
         ></span>
       </button>
       <div v-if="showDropdown.audience" class="dropdown-content">
-        <label
-          v-for="audience in uniqueAudiences"
-          :key="audience"
-          class="dropdown-item"
-        >
-          <input type="checkbox" v-model="filters.audience" :value="audience" />
-          {{ audience }}
-        </label>
+        <div v-for="audience in uniqueAudiencesSet" :key="audience">
+          <template v-if="audience.trim()">
+            <label
+              v-for="individualAudience in audience
+                .split(',')
+                .map((a) =>
+                  a.trim().replace(/&amp;/g, ' ').replace(/amp;/g, ' ')
+                )
+                .filter((a) => a)"
+              :key="individualAudience"
+              class="dropdown-item"
+            >
+              <input
+                type="checkbox"
+                v-model="filters.audience"
+                :value="individualAudience"
+              />
+              {{ individualAudience }}
+            </label>
+          </template>
+        </div>
       </div>
     </div>
 
@@ -116,6 +135,17 @@ export default {
   },
 
   computed: {
+    uniqueAudiencesSet() {
+      const deduplicatedAudiences = new Set();
+      this.uniqueAudiences.forEach((audience) => {
+        audience
+          .split(",")
+          .map((a) => a.trim().replace(/&amp;/g, " ").replace(/amp;/g, " "))
+          .filter((a) => a)
+          .forEach((audienceItem) => deduplicatedAudiences.add(audienceItem));
+      });
+      return [...deduplicatedAudiences];
+    },
     uniqueStartDates() {
       return [
         ...new Set(this.cards.map((card) => card.field_event_start_date)),
@@ -130,7 +160,6 @@ export default {
 
     filteredCards() {
       return this.cards.filter((card) => {
-        // Search functionality
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
@@ -138,7 +167,6 @@ export default {
           return false;
         }
 
-        // Filtering functionality
         const { data, event, audience } = this.filters;
         if (
           (data.length && !data.includes(card.field_event_start_date)) ||
@@ -159,14 +187,34 @@ export default {
 
   methods: {
     toggleDropdown(category) {
-      // Close other dropdowns
       for (let key in this.showDropdown) {
         if (key !== category) {
           this.showDropdown[key] = false;
         }
       }
-      // Toggle the selected dropdown
       this.showDropdown[category] = !this.showDropdown[category];
+    },
+    handleDocumentClick(event) {
+      const dropdownContainer = this.$refs.dropdownContainer;
+      if (!dropdownContainer.contains(event.target)) {
+        for (let key in this.showDropdown) {
+          this.showDropdown[key] = false;
+        }
+      }
+    },
+    getUniqueAudienceValues(audience) {
+      // Ensure audience is a string and split, trim, replace, filter, and return unique values
+      if (typeof audience !== "string") {
+        return [];
+      }
+      return [
+        ...new Set(
+          audience
+            .split(",")
+            .map((a) => a.trim().replace(/&amp;/g, " ").replace(/amp;/g, " "))
+            .filter((a) => a)
+        ),
+      ];
     },
   },
 };
@@ -202,6 +250,9 @@ export default {
   color: white;
   cursor: pointer;
   border-radius: 4px;
+}
+.dropdown-item {
+  text-align: left;
 }
 
 .dropdown-content {
