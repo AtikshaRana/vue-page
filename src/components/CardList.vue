@@ -1,5 +1,6 @@
 <template>
   <div>
+    <!-- Search Bar -->
     <input
       type="text"
       v-model="searchQuery"
@@ -19,13 +20,13 @@
         ></span>
       </button>
       <div v-if="showDropdown.data" class="dropdown-content">
-        <label>
-          <input type="checkbox" v-model="filters.data.categoryA" />
-          Data Category A
-        </label>
-        <label>
-          <input type="checkbox" v-model="filters.data.categoryB" />
-          Data Category B
+        <label
+          v-for="date in uniqueStartDates"
+          :key="date"
+          class="dropdown-item"
+        >
+          <input type="checkbox" v-model="filters.data" :value="date" />
+          {{ date }}
         </label>
       </div>
     </div>
@@ -42,13 +43,13 @@
         ></span>
       </button>
       <div v-if="showDropdown.event" class="dropdown-content">
-        <label>
-          <input type="checkbox" v-model="filters.event.categoryA" />
-          Event Category A
-        </label>
-        <label>
-          <input type="checkbox" v-model="filters.event.categoryB" />
-          Event Category B
+        <label
+          v-for="type in uniqueEventTypes"
+          :key="type"
+          class="dropdown-item"
+        >
+          <input type="checkbox" v-model="filters.event" :value="type" />
+          {{ type }}
         </label>
       </div>
     </div>
@@ -65,148 +66,97 @@
         ></span>
       </button>
       <div v-if="showDropdown.audience" class="dropdown-content">
-        <label>
-          <input type="checkbox" v-model="filters.audience.categoryA" />
-          Audience Category A
-        </label>
-        <label>
-          <input type="checkbox" v-model="filters.audience.categoryB" />
-          Audience Category B
+        <label
+          v-for="audience in uniqueAudiences"
+          :key="audience"
+          class="dropdown-item"
+        >
+          <input type="checkbox" v-model="filters.audience" :value="audience" />
+          {{ audience }}
         </label>
       </div>
     </div>
 
+    <!-- Total Cards Display -->
     <p>Total Cards: {{ totalCards }}</p>
+
     <div class="cards">
-      <div v-for="card in filteredCards" :key="card.id" class="card">
-        <h2>{{ card.name }}</h2>
-        <p>Category: {{ card.category }}</p>
-        <p>Type: {{ card.type }}</p>
-        <p>Audience: {{ card.audience }}</p>
+      <div v-for="card in filteredCards" :key="card.title" class="card">
+        <h2>{{ card.title }}</h2>
+        <p>Event Type: {{ card.field_event_type }}</p>
+        <p>Audience: {{ card.field_audience }}</p>
+        <p>Location: {{ card.field_designation }}</p>
+        <p>Start Date: {{ card.field_event_start_date }}</p>
+        <p>End Date: {{ card.field_event_end_date }}</p>
+        <a :href="card.field_id" target="_blank">More Info</a>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import eventsData from "./events.json";
+
 export default {
   data() {
     return {
       searchQuery: "",
-      cards: [
-        {
-          id: 1,
-          name: "Card 1",
-          category: "A",
-          type: "Data",
-          audience: "Audience A",
-        },
-        {
-          id: 2,
-          name: "Card 2",
-          category: "B",
-          type: "Event",
-          audience: "Audience B",
-        },
-        {
-          id: 3,
-          name: "Card 3",
-          category: "A",
-          type: "Data",
-          audience: "Audience A",
-        },
-        {
-          id: 4,
-          name: "Card 4",
-          category: "C",
-          type: "Event",
-          audience: "Audience C",
-        },
-        {
-          id: 5,
-          name: "Card 5",
-          category: "B",
-          type: "Audience",
-          audience: "Audience B",
-        },
-      ],
       filters: {
-        data: {
-          categoryA: false,
-          categoryB: false,
-        },
-        event: {
-          categoryA: false,
-          categoryB: false,
-        },
-        audience: {
-          categoryA: false,
-          categoryB: false,
-        },
+        data: [],
+        event: [],
+        audience: [],
       },
       showDropdown: {
         data: false,
         event: false,
         audience: false,
       },
+      cards: eventsData.cards,
     };
   },
+
   computed: {
+    uniqueStartDates() {
+      return [
+        ...new Set(this.cards.map((card) => card.field_event_start_date)),
+      ];
+    },
+    uniqueEventTypes() {
+      return [...new Set(this.cards.map((card) => card.field_event_type))];
+    },
+    uniqueAudiences() {
+      return [...new Set(this.cards.map((card) => card.field_audience))];
+    },
+
     filteredCards() {
       return this.cards.filter((card) => {
         // Search functionality
         if (
           this.searchQuery &&
-          !card.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+          !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
         ) {
           return false;
         }
 
         // Filtering functionality
-        const filters = this.filters;
+        const { data, event, audience } = this.filters;
         if (
-          filters.data.categoryA &&
-          card.type === "Data" &&
-          card.category === "A"
-        )
-          return true;
-        if (
-          filters.data.categoryB &&
-          card.type === "Data" &&
-          card.category === "B"
-        )
-          return true;
-        if (
-          filters.event.categoryA &&
-          card.type === "Event" &&
-          card.category === "A"
-        )
-          return true;
-        if (
-          filters.event.categoryB &&
-          card.type === "Event" &&
-          card.category === "B"
-        )
-          return true;
-        if (filters.audience.categoryA && card.audience === "Audience A")
-          return true;
-        if (filters.audience.categoryB && card.audience === "Audience B")
-          return true;
+          (data.length && !data.includes(card.field_event_start_date)) ||
+          (event.length && !event.includes(card.field_event_type)) ||
+          (audience.length && !audience.includes(card.field_audience))
+        ) {
+          return false;
+        }
 
-        // If no filters are selected, show all cards
-        const noFiltersSelected =
-          Object.values(filters.data).every((value) => !value) &&
-          Object.values(filters.event).every((value) => !value) &&
-          Object.values(filters.audience).every((value) => !value);
-        if (noFiltersSelected) return true;
-
-        return false;
+        return true;
       });
     },
+
     totalCards() {
       return this.filteredCards.length;
     },
   },
+
   methods: {
     toggleDropdown(category) {
       // Close other dropdowns
@@ -223,6 +173,7 @@ export default {
 </script>
 
 <style>
+/* Your existing styles */
 .cards {
   display: flex;
   flex-wrap: wrap;
@@ -264,6 +215,19 @@ export default {
   margin-top: 5px;
   z-index: 1;
   width: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  padding: 5px 0;
+}
+
+.dropdown-item input {
+  margin-right: 10px;
 }
 
 .arrow-up::before {
