@@ -1,113 +1,120 @@
 <template>
-  <div>
+  <div class="main">
     <!-- Search Bar -->
-    <input
-      type="text"
-      v-model="searchQuery"
-      placeholder="Search cards..."
-      class="search-bar"
-    />
+    <div class="container">
+      <div class="searchAndDropdown">
+        <div class="dropDownWrap">
+          <!-- Data Category Dropdown -->
+          <div class="dropdown">
+            <button @click="toggleDropdown('data')" class="dropdown-button">
+              Data Category
+              <span
+                :class="{
+                  'arrow-up': showDropdown.data,
+                  'arrow-down': !showDropdown.data,
+                }"
+              ></span>
+            </button>
+            <div v-if="showDropdown.data" class="dropdown-content">
+              <label
+                v-for="date in [...new Set(uniqueStartDates)]"
+                :key="date"
+                class="dropdown-item"
+              >
+                <input type="checkbox" v-model="filters.data" :value="date" />
+                {{ date }}
+              </label>
+            </div>
+          </div>
 
-    <!-- Data Category Dropdown -->
-    <div class="dropdown">
-      <button @click="toggleDropdown('data')" class="dropdown-button">
-        Data Category
-        <span
-          :class="{
-            'arrow-up': showDropdown.data,
-            'arrow-down': !showDropdown.data,
-          }"
-        ></span>
-      </button>
-      <div v-if="showDropdown.data" class="dropdown-content">
-        <label
-          v-for="date in [...new Set(uniqueStartDates)]"
-          :key="date"
-          class="dropdown-item"
-        >
-          <input type="checkbox" v-model="filters.data" :value="date" />
-          {{ date }}
-        </label>
-      </div>
-    </div>
+          <!-- Event Category Dropdown -->
+          <div class="dropdown">
+            <button @click="toggleDropdown('event')" class="dropdown-button">
+              Event Category
+              <span
+                :class="{
+                  'arrow-up': showDropdown.event,
+                  'arrow-down': !showDropdown.event,
+                }"
+              ></span>
+            </button>
+            <div v-if="showDropdown.event" class="dropdown-content">
+              <div v-for="type in uniqueEventTypes" :key="type">
+                <label
+                  v-for="individualType in [...new Set(type.split(','))]"
+                  :key="individualType"
+                  class="dropdown-item"
+                >
+                  <input
+                    type="checkbox"
+                    v-model="filters.event"
+                    :value="individualType.trim()"
+                  />
+                  {{ individualType.trim() }}
+                </label>
+              </div>
+            </div>
+          </div>
 
-    <!-- Event Category Dropdown -->
-    <div class="dropdown">
-      <button @click="toggleDropdown('event')" class="dropdown-button">
-        Event Category
-        <span
-          :class="{
-            'arrow-up': showDropdown.event,
-            'arrow-down': !showDropdown.event,
-          }"
-        ></span>
-      </button>
-      <div v-if="showDropdown.event" class="dropdown-content">
-        <div v-for="type in uniqueEventTypes" :key="type">
-          <label
-            v-for="individualType in [...new Set(type.split(','))]"
-            :key="individualType"
-            class="dropdown-item"
-          >
-            <input
-              type="checkbox"
-              v-model="filters.event"
-              :value="individualType.trim()"
-            />
-            {{ individualType.trim() }}
-          </label>
+          <!-- Audience Category Dropdown -->
+          <div class="dropdown">
+            <button @click="toggleDropdown('audience')" class="dropdown-button">
+              Audience Category
+              <span
+                :class="{
+                  'arrow-up': showDropdown.audience,
+                  'arrow-down': !showDropdown.audience,
+                }"
+              ></span>
+            </button>
+            <div v-if="showDropdown.audience" class="dropdown-content">
+              <div v-for="audience in uniqueAudiencesSet" :key="audience">
+                <template v-if="audience.trim()">
+                  <label
+                    v-for="individualAudience in audience
+                      .split(',')
+                      .map((a) =>
+                        a.trim().replace(/&amp;/g, ' ').replace(/amp;/g, ' ')
+                      )
+                      .filter((a) => a)"
+                    :key="individualAudience"
+                    class="dropdown-item"
+                  >
+                    <input
+                      type="checkbox"
+                      v-model="filters.audience"
+                      :value="individualAudience"
+                    />
+                    {{ individualAudience }}
+                  </label>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="totalCards">
+          <p>Total Cards: {{ totalCards }}</p>
+        </div>
+        <div class="searchWrap">
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="Search cards..."
+            class="search-bar"
+          />
         </div>
       </div>
-    </div>
 
-    <!-- Audience Category Dropdown -->
-    <div class="dropdown">
-      <button @click="toggleDropdown('audience')" class="dropdown-button">
-        Audience Category
-        <span
-          :class="{
-            'arrow-up': showDropdown.audience,
-            'arrow-down': !showDropdown.audience,
-          }"
-        ></span>
-      </button>
-      <div v-if="showDropdown.audience" class="dropdown-content">
-        <div v-for="audience in uniqueAudiencesSet" :key="audience">
-          <template v-if="audience.trim()">
-            <label
-              v-for="individualAudience in audience
-                .split(',')
-                .map((a) =>
-                  a.trim().replace(/&amp;/g, ' ').replace(/amp;/g, ' ')
-                )
-                .filter((a) => a)"
-              :key="individualAudience"
-              class="dropdown-item"
-            >
-              <input
-                type="checkbox"
-                v-model="filters.audience"
-                :value="individualAudience"
-              />
-              {{ individualAudience }}
-            </label>
-          </template>
+      <div class="cards">
+        <div v-for="card in filteredCards" :key="card.title" class="card">
+          <h2>{{ card.title }}</h2>
+          <p>Event Type: {{ card.field_event_type }}</p>
+          <p>Audience: {{ card.field_audience }}</p>
+          <p>Location: {{ card.field_designation }}</p>
+          <p>Start Date: {{ card.field_event_start_date }}</p>
+          <p>End Date: {{ card.field_event_end_date }}</p>
+          <a :href="card.field_id" target="_blank">More Info</a>
         </div>
-      </div>
-    </div>
-
-    <!-- Total Cards Display -->
-    <p>Total Cards: {{ totalCards }}</p>
-
-    <div class="cards">
-      <div v-for="card in filteredCards" :key="card.title" class="card">
-        <h2>{{ card.title }}</h2>
-        <p>Event Type: {{ card.field_event_type }}</p>
-        <p>Audience: {{ card.field_audience }}</p>
-        <p>Location: {{ card.field_designation }}</p>
-        <p>Start Date: {{ card.field_event_start_date }}</p>
-        <p>End Date: {{ card.field_event_end_date }}</p>
-        <a :href="card.field_id" target="_blank">More Info</a>
       </div>
     </div>
   </div>
@@ -185,18 +192,44 @@ export default {
     },
   },
 
+  mounted() {
+    document.addEventListener("click", this.handleDocumentClick);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleDocumentClick);
+  },
+
   methods: {
     toggleDropdown(category) {
+      // Close all dropdowns
       for (let key in this.showDropdown) {
         if (key !== category) {
           this.showDropdown[key] = false;
         }
       }
+      // Toggle the selected dropdown
       this.showDropdown[category] = !this.showDropdown[category];
     },
     handleDocumentClick(event) {
-      const dropdownContainer = this.$refs.dropdownContainer;
-      if (!dropdownContainer.contains(event.target)) {
+      // Check if the clicked element is part of any dropdown button or its content
+      let isDropdownClick = false;
+      const dropdownButtons = document.querySelectorAll(".dropdown-button");
+      dropdownButtons.forEach((button) => {
+        if (button.contains(event.target)) {
+          isDropdownClick = true;
+        }
+      });
+
+      const dropdownContents = document.querySelectorAll(".dropdown-content");
+      dropdownContents.forEach((content) => {
+        if (content.contains(event.target)) {
+          isDropdownClick = true;
+        }
+      });
+
+      // Close all dropdowns if the click is outside any dropdown
+      if (!isDropdownClick) {
         for (let key in this.showDropdown) {
           this.showDropdown[key] = false;
         }
@@ -225,16 +258,23 @@ export default {
 .cards {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
   margin-top: 20px;
+  margin-left: -15px;
+  width: calc(100% + 30px);
+  overflow: hidden;
 }
-
+.main {
+  overflow: hidden;
+  box-sizing: border-box;
+}
 .card {
   border: 1px solid #ccc;
   padding: 20px;
   border-radius: 8px;
-  width: calc(33% - 40px);
+  width: calc(33.33% - 30px);
+  margin: 0 15px 20px;
   box-sizing: border-box;
+  background: #29325b0f;
 }
 
 .dropdown {
@@ -242,7 +282,9 @@ export default {
   display: inline-block;
   margin-right: 10px;
 }
-
+h2 {
+  color: #4185b5;
+}
 .dropdown-button {
   padding: 10px;
   border: none;
@@ -254,7 +296,20 @@ export default {
 .dropdown-item {
   text-align: left;
 }
-
+a {
+  color: black;
+  transition: color 0.3s ease-in-out;
+}
+a:hover {
+  color: #3498db;
+  transition: color 0.3s ease-in-out;
+}
+.container {
+  widows: 100%;
+  max-width: 1400px;
+  padding: 0 20px;
+  margin: 0 auto;
+}
 .dropdown-content {
   display: flex;
   flex-direction: column;
@@ -269,6 +324,9 @@ export default {
   max-height: 200px;
   overflow-y: auto;
 }
+.totalCards p {
+  color: #fff;
+}
 
 .dropdown-item {
   display: flex;
@@ -276,7 +334,15 @@ export default {
   margin-bottom: 5px;
   padding: 5px 0;
 }
-
+.searchAndDropdown {
+  display: flex;
+  background-color: #3498db;
+  align-items: center;
+  padding: 20px 50px;
+  justify-content: space-between;
+}
+/* .dropDownWrap {
+} */
 .dropdown-item input {
   margin-right: 10px;
 }
@@ -297,8 +363,8 @@ label {
 
 .search-bar {
   padding: 10px;
-  margin-bottom: 20px;
   width: 100%;
+  min-width: 350px;
   box-sizing: border-box;
   border-radius: 4px;
   border: 1px solid #ccc;
