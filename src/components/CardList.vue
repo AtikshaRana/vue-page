@@ -98,6 +98,7 @@
             </div>
           </div>
         </div>
+
         <div class="totalCards">
           <p>Total Cards: {{ totalCards }}</p>
         </div>
@@ -110,17 +111,49 @@
           />
         </div>
       </div>
-
-      <div class="cards">
-        <div v-for="card in filteredCards" :key="card.title" class="card">
-          <h2>{{ card.title }}</h2>
-          <p>Event Type: {{ card.field_event_type }}</p>
-          <p>Audience: {{ card.field_audience }}</p>
-          <p>Location: {{ card.field_designation }}</p>
-          <p>Start Date: {{ card.field_event_start_date }}</p>
-          <p>End Date: {{ card.field_event_end_date }}</p>
-          <a :href="card.field_id" target="_blank">More Info</a>
+      <div class="">
+        <div class="selectedFilters">
+          <span
+            v-for="(filter, index) in selectedFilters"
+            :key="index"
+            class="selectedFilter"
+          >
+            {{ filter.category }}: {{ filter.value }}
+            <span
+              class="remove-filter-icon"
+              @click="removeSelectedFilter(filter)"
+            >
+              ✕
+            </span>
+          </span>
         </div>
+      </div>
+
+      <div class="">
+        <div v-if="paginatedCards.length > 0" class="cards">
+          <div v-for="card in paginatedCards" :key="card.field_id" class="card">
+            <h2>{{ card.title }}</h2>
+            <p>Event Type: {{ card.field_event_type }}</p>
+            <p>Audience: {{ card.field_audience }}</p>
+            <p>Location: {{ card.field_designation }}</p>
+            <p>Start Date: {{ card.field_event_start_date }}</p>
+            <p>End Date: {{ card.field_event_end_date }}</p>
+            <a :href="card.field_id" target="_blank">More Info</a>
+          </div>
+        </div>
+        <div v-else>
+          <h2>No cards available.</h2>
+        </div>
+      </div>
+      <!-- Pagination Controls -->
+      <div v-if="shouldShowPagination" class="pagination">
+        <button @click="prevPage" :disabled="currentPage === 1">
+          &#8592; Previous
+        </button>
+        <span>Page {{ currentPage }} of {{ totalPages }}</span>
+        <button @click="nextPage" :disabled="currentPage === totalPages">
+          Next &#8594;
+        </button>
       </div>
     </div>
   </div>
@@ -144,6 +177,8 @@ export default {
         audience: false,
       },
       cards: eventsData.cards,
+      currentPage: 1,
+      perPage: 9,
     };
   },
   computed: {
@@ -233,9 +268,51 @@ export default {
         return true;
       });
     },
-
+    paginatedCards() {
+      const startIndex = (this.currentPage - 1) * this.perPage;
+      return this.filteredCards.slice(startIndex, startIndex + this.perPage);
+    },
     totalCards() {
       return this.filteredCards.length;
+    },
+    totalPages() {
+      return Math.ceil(this.filteredCards.length / this.perPage);
+    },
+    shouldShowPagination() {
+      return this.totalCards > this.perPage;
+    },
+
+    selectedFilters() {
+      const selected = [];
+
+      if (this.filters.data.length > 0) {
+        selected.push(
+          ...this.filters.data.map((date) => ({
+            category: "data",
+            value: `Data: ${date}`,
+          }))
+        );
+      }
+
+      if (this.filters.event.length > 0) {
+        selected.push(
+          ...this.filters.event.map((type) => ({
+            category: "event",
+            value: `Event: ${type}`,
+          }))
+        );
+      }
+
+      if (this.filters.audience.length > 0) {
+        selected.push(
+          ...this.filters.audience.map((audience) => ({
+            category: "audience",
+            value: `Audience: ${audience}`,
+          }))
+        );
+      }
+
+      return selected;
     },
   },
 
@@ -282,14 +359,83 @@ export default {
         }
       }
     },
+    removeSelectedFilter(filter) {
+      // Remove filter from selected filters array
+      const index = this.selectedFilters.indexOf(filter);
+      if (index !== -1) {
+        this.selectedFilters.splice(index, 1);
+      }
+
+      // Remove filter from respective filter array
+      const filterIndex = this.filters[filter.category].indexOf(filter.value);
+      if (filterIndex !== -1) {
+        this.filters[filter.category].splice(filterIndex, 1);
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
   },
 };
 </script>
 
 
-
 <style>
-/* Your existing styles */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.pagination button {
+  background-color: #4185b5;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  margin: 0 5px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.pagination button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  margin: 0 10px;
+  font-size: 16px;
+}
+.selectedFilters {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.selectedFilter {
+  background-color: #f0f0f0;
+  padding: 5px;
+  border-radius: 4px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+}
+
+.remove-filter-icon {
+  cursor: pointer;
+  margin-left: 5px;
+}
+
 .cards {
   display: flex;
   flex-wrap: wrap;
@@ -318,6 +464,9 @@ export default {
   display: inline-block;
   margin-right: 10px;
 }
+.dropdown button {
+  font-size: 16px;
+}
 h2 {
   color: #4185b5;
 }
@@ -341,7 +490,7 @@ a:hover {
   transition: color 0.3s ease-in-out;
 }
 .container {
-  widows: 100%;
+  width: 100%;
   max-width: 1400px;
   padding: 0 20px;
   margin: 0 auto;
