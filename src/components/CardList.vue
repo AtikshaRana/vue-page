@@ -17,7 +17,7 @@
             </button>
             <div v-if="showDropdown.data" class="dropdown-content">
               <label
-                v-for="(count, date) in filteredUniqueStartDatesWithCount"
+                v-for="(count, date) in uniqueStartDatesWithCount"
                 :key="date"
                 class="dropdown-item"
               >
@@ -39,14 +39,23 @@
               ></span>
             </button>
             <div v-if="showDropdown.event" class="dropdown-content">
-              <label
-                v-for="(count, type) in filteredUniqueEventTypesWithCount"
+              <div
+                v-for="(count, type) in uniqueEventTypesWithCount"
                 :key="type"
-                class="dropdown-item"
               >
-                <input type="checkbox" v-model="filters.event" :value="type" />
-                {{ type }} ({{ count }})
-              </label>
+                <label
+                  v-for="individualType in [...new Set(type.split(','))]"
+                  :key="individualType"
+                  class="dropdown-item"
+                >
+                  <input
+                    type="checkbox"
+                    v-model="filters.event"
+                    :value="individualType.trim()"
+                  />
+                  {{ individualType.trim() }} ({{ count }})
+                </label>
+              </div>
             </div>
           </div>
 
@@ -62,18 +71,30 @@
               ></span>
             </button>
             <div v-if="showDropdown.audience" class="dropdown-content">
-              <label
-                v-for="(count, audience) in filteredUniqueAudiencesWithCount"
+              <div
+                v-for="(count, audience) in uniqueAudiencesSetWithCount"
                 :key="audience"
-                class="dropdown-item"
               >
-                <input
-                  type="checkbox"
-                  v-model="filters.audience"
-                  :value="audience"
-                />
-                {{ audience }} ({{ count }})
-              </label>
+                <template v-if="audience.trim()">
+                  <label
+                    v-for="individualAudience in audience
+                      .split(',')
+                      .map((a) =>
+                        a.trim().replace(/&amp;/g, ' ').replace(/amp;/g, ' ')
+                      )
+                      .filter((a) => a)"
+                    :key="individualAudience"
+                    class="dropdown-item"
+                  >
+                    <input
+                      type="checkbox"
+                      v-model="filters.audience"
+                      :value="individualAudience"
+                    />
+                    {{ individualAudience }} ({{ count }})
+                  </label>
+                </template>
+              </div>
             </div>
           </div>
         </div>
@@ -208,106 +229,32 @@ export default {
         ),
       ];
     },
-    filteredUniqueStartDatesWithCount() {
-      const filteredCounts = {};
-      const selectedData = this.filters.data;
 
-      this.cards.forEach((card) => {
-        if (
-          !selectedData.length ||
-          selectedData.includes(card.field_event_start_date)
-        ) {
-          if (filteredCounts[card.field_event_start_date]) {
-            filteredCounts[card.field_event_start_date]++;
-          } else {
-            filteredCounts[card.field_event_start_date] = 1;
-          }
-        }
-      });
-
-      return filteredCounts;
-    },
-    filteredUniqueEventTypesWithCount() {
-      const filteredCounts = {};
-      const selectedData = this.filters.data;
-      const selectedEvent = this.filters.event;
-
-      this.cards.forEach((card) => {
-        if (
-          (!selectedData.length ||
-            selectedData.includes(card.field_event_start_date)) &&
-          (!selectedEvent.length ||
-            selectedEvent.includes(card.field_event_type))
-        ) {
-          if (filteredCounts[card.field_event_type]) {
-            filteredCounts[card.field_event_type]++;
-          } else {
-            filteredCounts[card.field_event_type] = 1;
-          }
-        }
-      });
-
-      return filteredCounts;
-    },
-    filteredUniqueAudiencesWithCount() {
-      const filteredCounts = {};
-      const selectedData = this.filters.data;
-      const selectedEvent = this.filters.event;
-      const selectedAudience = this.filters.audience;
-
-      this.cards.forEach((card) => {
-        if (
-          (!selectedData.length ||
-            selectedData.includes(card.field_event_start_date)) &&
-          (!selectedEvent.length ||
-            selectedEvent.includes(card.field_event_type)) &&
-          (!selectedAudience.length ||
-            card.field_audience
-              .split(",")
-              .some((a) => selectedAudience.includes(a.trim())))
-        ) {
-          card.field_audience.split(",").forEach((audienceItem) => {
-            const trimmedAudience = audienceItem.trim();
-            if (
-              trimmedAudience &&
-              (!selectedAudience.length ||
-                selectedAudience.includes(trimmedAudience))
-            ) {
-              if (filteredCounts[trimmedAudience]) {
-                filteredCounts[trimmedAudience]++;
-              } else {
-                filteredCounts[trimmedAudience] = 1;
-              }
-            }
-          });
-        }
-      });
-
-      return filteredCounts;
-    },
     filteredCards() {
-      return this.cards.filter((card) => {
-        const { data, event, audience } = this.filters;
+      const uniqueCards = [];
 
+      this.cards.forEach((card) => {
         // Check if the search query matches the card title
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
         ) {
-          return false;
+          return;
         }
+
+        const { data, event, audience } = this.filters;
 
         // Check data filter
         if (data.length && !data.includes(card.field_event_start_date)) {
-          return false;
+          return;
         }
 
         // Check event filter
         if (event.length && !event.includes(card.field_event_type)) {
-          return false;
+          return;
         }
 
-        // Check audience filter
+        // Check audience filter with multiple values separated by commas
         if (audience.length) {
           const audienceValues = card.field_audience
             .split(",")
@@ -316,13 +263,19 @@ export default {
             audienceValues.includes(aud)
           );
           if (!audienceMatch) {
-            return false;
+            return;
           }
         }
 
-        return true;
+        // Check if the card with the same id is already in uniqueCards array
+        if (!uniqueCards.some((c) => c.id === card.id)) {
+          uniqueCards.push(card);
+        }
       });
+
+      return uniqueCards;
     },
+
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
       const paginatedSlice = this.filteredCards.slice(
@@ -330,8 +283,14 @@ export default {
         startIndex + this.perPage
       );
 
-      return paginatedSlice;
+      // Use a Set to store unique cards based on their ids
+      const uniqueCards = Array.from(
+        new Set(paginatedSlice.map((card) => card.id))
+      ).map((id) => paginatedSlice.find((card) => card.id === id));
+
+      return uniqueCards;
     },
+
     totalCards() {
       return this.filteredCards.length;
     },
@@ -341,6 +300,7 @@ export default {
     shouldShowPagination() {
       return this.totalCards > this.perPage;
     },
+
     selectedFilters() {
       const selected = [];
 
@@ -374,6 +334,15 @@ export default {
       return selected;
     },
   },
+
+  mounted() {
+    document.addEventListener("click", this.handleDocumentClick);
+  },
+
+  beforeUnmount() {
+    document.removeEventListener("click", this.handleDocumentClick);
+  },
+
   methods: {
     toggleDropdown(category) {
       // Close all dropdowns
@@ -384,6 +353,30 @@ export default {
       }
       // Toggle the selected dropdown
       this.showDropdown[category] = !this.showDropdown[category];
+    },
+    handleDocumentClick(event) {
+      // Check if the clicked element is part of any dropdown button or its content
+      let isDropdownClick = false;
+      const dropdownButtons = document.querySelectorAll(".dropdown-button");
+      dropdownButtons.forEach((button) => {
+        if (button.contains(event.target)) {
+          isDropdownClick = true;
+        }
+      });
+
+      const dropdownContents = document.querySelectorAll(".dropdown-content");
+      dropdownContents.forEach((content) => {
+        if (content.contains(event.target)) {
+          isDropdownClick = true;
+        }
+      });
+
+      // Close all dropdowns if the click is outside any dropdown
+      if (!isDropdownClick) {
+        for (let key in this.showDropdown) {
+          this.showDropdown[key] = false;
+        }
+      }
     },
     removeSelectedFilter(filter) {
       // Remove filter from selected filters array
@@ -415,10 +408,6 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-/* Add your component-specific styles here */
-</style>
 
 <style>
 .pagination {
