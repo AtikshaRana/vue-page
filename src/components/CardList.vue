@@ -231,25 +231,27 @@ export default {
     },
 
     filteredCards() {
-      return this.cards.filter((card) => {
+      const uniqueCards = [];
+
+      this.cards.forEach((card) => {
         // Check if the search query matches the card title
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
         ) {
-          return false;
+          return;
         }
 
         const { data, event, audience } = this.filters;
 
         // Check data filter
         if (data.length && !data.includes(card.field_event_start_date)) {
-          return false;
+          return;
         }
 
         // Check event filter
         if (event.length && !event.includes(card.field_event_type)) {
-          return false;
+          return;
         }
 
         // Check audience filter with multiple values separated by commas
@@ -261,17 +263,34 @@ export default {
             audienceValues.includes(aud)
           );
           if (!audienceMatch) {
-            return false;
+            return;
           }
         }
 
-        return true;
+        // Check if the card with the same id is already in uniqueCards array
+        if (!uniqueCards.some((c) => c.id === card.id)) {
+          uniqueCards.push(card);
+        }
       });
+
+      return uniqueCards;
     },
+
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
-      return this.filteredCards.slice(startIndex, startIndex + this.perPage);
+      const paginatedSlice = this.filteredCards.slice(
+        startIndex,
+        startIndex + this.perPage
+      );
+
+      // Use a Set to store unique cards based on their ids
+      const uniqueCards = Array.from(
+        new Set(paginatedSlice.map((card) => card.id))
+      ).map((id) => paginatedSlice.find((card) => card.id === id));
+
+      return uniqueCards;
     },
+
     totalCards() {
       return this.filteredCards.length;
     },
@@ -289,7 +308,7 @@ export default {
         selected.push(
           ...this.filters.data.map((date) => ({
             category: "data",
-            value: `Data: ${date}`,
+            value: date,
           }))
         );
       }
@@ -298,7 +317,7 @@ export default {
         selected.push(
           ...this.filters.event.map((type) => ({
             category: "event",
-            value: `Event: ${type}`,
+            value: type,
           }))
         );
       }
@@ -307,7 +326,7 @@ export default {
         selected.push(
           ...this.filters.audience.map((audience) => ({
             category: "audience",
-            value: `Audience: ${audience}`,
+            value: audience,
           }))
         );
       }
@@ -361,7 +380,11 @@ export default {
     },
     removeSelectedFilter(filter) {
       // Remove filter from selected filters array
-      const index = this.selectedFilters.indexOf(filter);
+      const index = this.selectedFilters.findIndex(
+        (selected) =>
+          selected.category === filter.category &&
+          selected.value === filter.value
+      );
       if (index !== -1) {
         this.selectedFilters.splice(index, 1);
       }
@@ -385,7 +408,6 @@ export default {
   },
 };
 </script>
-
 
 <style>
 .pagination {
