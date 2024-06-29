@@ -176,131 +176,121 @@ export default {
         event: false,
         audience: false,
       },
-      cards: eventsData.cards,
+      cards: [],
       currentPage: 1,
       perPage: 9,
     };
   },
   computed: {
-    uniqueAudiencesSetWithCount() {
-      const counts = {};
-      this.cards.forEach((card) => {
-        card.field_audience
-          .split(",")
-          .map((audience) => audience.trim())
-          .forEach((audienceItem) => {
-            if (counts[audienceItem]) {
-              counts[audienceItem]++;
-            } else {
-              counts[audienceItem] = 1;
-            }
-          });
-      });
-      return counts;
-    },
+    // Compute counts for unique data categories with their respective counts
     uniqueStartDatesWithCount() {
       const counts = {};
       this.cards.forEach((card) => {
-        if (counts[card.field_event_start_date]) {
-          counts[card.field_event_start_date]++;
-        } else {
-          counts[card.field_event_start_date] = 1;
+        if (card.field_event_start_date) {
+          if (counts[card.field_event_start_date]) {
+            counts[card.field_event_start_date]++;
+          } else {
+            counts[card.field_event_start_date] = 1;
+          }
         }
       });
       return counts;
     },
+    // Compute counts for unique event types with their respective counts
     uniqueEventTypesWithCount() {
       const counts = {};
       this.cards.forEach((card) => {
-        if (counts[card.field_event_type]) {
-          counts[card.field_event_type]++;
-        } else {
-          counts[card.field_event_type] = 1;
+        if (card.field_event_type) {
+          if (counts[card.field_event_type]) {
+            counts[card.field_event_type]++;
+          } else {
+            counts[card.field_event_type] = 1;
+          }
         }
       });
       return counts;
     },
-    uniqueAudiences() {
-      return [
-        ...new Set(
-          this.cards.flatMap((card) =>
-            card.field_audience.split(",").map((a) => a.trim())
-          )
-        ),
-      ];
-    },
-
-    filteredCards() {
-      const uniqueCards = [];
-
+    // Compute counts for unique audiences with their respective counts
+    uniqueAudiencesSetWithCount() {
+      const counts = {};
       this.cards.forEach((card) => {
-        // Check if the search query matches the card title
+        if (card.field_audience) {
+          card.field_audience
+            .split(",")
+            .map((audience) => audience.trim())
+            .forEach((audienceItem) => {
+              if (counts[audienceItem]) {
+                counts[audienceItem]++;
+              } else {
+                counts[audienceItem] = 1;
+              }
+            });
+        }
+      });
+      return counts;
+    },
+    // Filtered cards based on search query and selected filters
+    filteredCards() {
+      const filtered = this.cards.filter((card) => {
+        // Filter by search query
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
         ) {
-          return;
+          return false;
         }
 
-        const { data, event, audience } = this.filters;
-
-        // Check data filter
-        if (data.length && !data.includes(card.field_event_start_date)) {
-          return;
+        // Filter by data category
+        if (
+          this.filters.data.length > 0 &&
+          !this.filters.data.includes(card.field_event_start_date)
+        ) {
+          return false;
         }
 
-        // Check event filter
-        if (event.length && !event.includes(card.field_event_type)) {
-          return;
+        // Filter by event category
+        if (
+          this.filters.event.length > 0 &&
+          !this.filters.event.includes(card.field_event_type)
+        ) {
+          return false;
         }
 
-        // Check audience filter with multiple values separated by commas
-        if (audience.length) {
+        // Filter by audience category
+        if (this.filters.audience.length > 0) {
           const audienceValues = card.field_audience
             .split(",")
             .map((value) => value.trim());
-          const audienceMatch = audience.some((aud) =>
-            audienceValues.includes(aud)
-          );
-          if (!audienceMatch) {
-            return;
+          if (
+            !this.filters.audience.some((aud) => audienceValues.includes(aud))
+          ) {
+            return false;
           }
         }
 
-        // Check if the card with the same id is already in uniqueCards array
-        if (!uniqueCards.some((c) => c.id === card.id)) {
-          uniqueCards.push(card);
-        }
+        return true;
       });
 
-      return uniqueCards;
+      return filtered;
     },
-
+    // Paginated cards based on current page and per page count
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
-      const paginatedSlice = this.filteredCards.slice(
-        startIndex,
-        startIndex + this.perPage
-      );
-
-      // Use a Set to store unique cards based on their ids
-      const uniqueCards = Array.from(
-        new Set(paginatedSlice.map((card) => card.id))
-      ).map((id) => paginatedSlice.find((card) => card.id === id));
-
-      return uniqueCards;
+      return this.filteredCards.slice(startIndex, startIndex + this.perPage);
     },
-
+    // Total number of filtered cards
     totalCards() {
       return this.filteredCards.length;
     },
+    // Total number of pages based on filtered cards and per page count
     totalPages() {
       return Math.ceil(this.filteredCards.length / this.perPage);
     },
+    // Whether pagination should be displayed
     shouldShowPagination() {
       return this.totalCards > this.perPage;
     },
-
+    // Selected filters to display
     selectedFilters() {
       const selected = [];
 
@@ -334,28 +324,29 @@ export default {
       return selected;
     },
   },
-
   mounted() {
+    // Set initial data from eventsData
+    this.cards = eventsData.cards;
+
+    // Add event listener to handle clicks outside dropdowns
     document.addEventListener("click", this.handleDocumentClick);
   },
-
   beforeUnmount() {
+    // Remove event listener when component is unmounted
     document.removeEventListener("click", this.handleDocumentClick);
   },
-
   methods: {
+    // Toggle dropdown visibility
     toggleDropdown(category) {
-      // Close all dropdowns
       for (let key in this.showDropdown) {
         if (key !== category) {
           this.showDropdown[key] = false;
         }
       }
-      // Toggle the selected dropdown
       this.showDropdown[category] = !this.showDropdown[category];
     },
+    // Handle clicks outside dropdowns to close them
     handleDocumentClick(event) {
-      // Check if the clicked element is part of any dropdown button or its content
       let isDropdownClick = false;
       const dropdownButtons = document.querySelectorAll(".dropdown-button");
       dropdownButtons.forEach((button) => {
@@ -371,15 +362,14 @@ export default {
         }
       });
 
-      // Close all dropdowns if the click is outside any dropdown
       if (!isDropdownClick) {
         for (let key in this.showDropdown) {
           this.showDropdown[key] = false;
         }
       }
     },
+    // Remove selected filter
     removeSelectedFilter(filter) {
-      // Remove filter from selected filters array
       const index = this.selectedFilters.findIndex(
         (selected) =>
           selected.category === filter.category &&
@@ -388,18 +378,18 @@ export default {
       if (index !== -1) {
         this.selectedFilters.splice(index, 1);
       }
-
-      // Remove filter from respective filter array
       const filterIndex = this.filters[filter.category].indexOf(filter.value);
       if (filterIndex !== -1) {
         this.filters[filter.category].splice(filterIndex, 1);
       }
     },
+    // Navigate to next page
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
+    // Navigate to previous page
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
