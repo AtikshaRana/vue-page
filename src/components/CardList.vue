@@ -185,7 +185,7 @@ export default {
     // Compute counts for unique data categories with their respective counts
     uniqueStartDatesWithCount() {
       const counts = {};
-      this.cards.forEach((card) => {
+      this.filteredCards.forEach((card) => {
         if (card.field_event_start_date) {
           if (counts[card.field_event_start_date]) {
             counts[card.field_event_start_date]++;
@@ -199,7 +199,7 @@ export default {
     // Compute counts for unique event types with their respective counts
     uniqueEventTypesWithCount() {
       const counts = {};
-      this.cards.forEach((card) => {
+      this.filteredCards.forEach((card) => {
         if (card.field_event_type) {
           if (counts[card.field_event_type]) {
             counts[card.field_event_type]++;
@@ -213,7 +213,7 @@ export default {
     // Compute counts for unique audiences with their respective counts
     uniqueAudiencesSetWithCount() {
       const counts = {};
-      this.cards.forEach((card) => {
+      this.filteredCards.forEach((card) => {
         if (card.field_audience) {
           card.field_audience
             .split(",")
@@ -398,6 +398,7 @@ export default {
   },
 };
 </script>
+
 
 <style>
 .pagination {
