@@ -7,7 +7,7 @@
           <!-- Data Category Dropdown -->
           <div class="dropdown">
             <button @click="toggleDropdown('data')" class="dropdown-button">
-              Data Category
+              Data
               <span
                 :class="{
                   'arrow-up': showDropdown.data,
@@ -17,12 +17,12 @@
             </button>
             <div v-if="showDropdown.data" class="dropdown-content">
               <label
-                v-for="date in [...new Set(uniqueStartDates)]"
+                v-for="(count, date) in uniqueStartDatesWithCount"
                 :key="date"
                 class="dropdown-item"
               >
                 <input type="checkbox" v-model="filters.data" :value="date" />
-                {{ date }}
+                {{ date }} {{ count > 1 ? count : "" }}
               </label>
             </div>
           </div>
@@ -30,7 +30,7 @@
           <!-- Event Category Dropdown -->
           <div class="dropdown">
             <button @click="toggleDropdown('event')" class="dropdown-button">
-              Event Category
+              Event
               <span
                 :class="{
                   'arrow-up': showDropdown.event,
@@ -39,7 +39,10 @@
               ></span>
             </button>
             <div v-if="showDropdown.event" class="dropdown-content">
-              <div v-for="type in uniqueEventTypes" :key="type">
+              <div
+                v-for="(count, type) in uniqueEventTypesWithCount"
+                :key="type"
+              >
                 <label
                   v-for="individualType in [...new Set(type.split(','))]"
                   :key="individualType"
@@ -50,7 +53,7 @@
                     v-model="filters.event"
                     :value="individualType.trim()"
                   />
-                  {{ individualType.trim() }}
+                  {{ individualType.trim() }} ({{ count }})
                 </label>
               </div>
             </div>
@@ -59,7 +62,7 @@
           <!-- Audience Category Dropdown -->
           <div class="dropdown">
             <button @click="toggleDropdown('audience')" class="dropdown-button">
-              Audience Category
+              Audience
               <span
                 :class="{
                   'arrow-up': showDropdown.audience,
@@ -68,7 +71,10 @@
               ></span>
             </button>
             <div v-if="showDropdown.audience" class="dropdown-content">
-              <div v-for="audience in uniqueAudiencesSet" :key="audience">
+              <div
+                v-for="(count, audience) in uniqueAudiencesSetWithCount"
+                :key="audience"
+              >
                 <template v-if="audience.trim()">
                   <label
                     v-for="individualAudience in audience
@@ -85,7 +91,7 @@
                       v-model="filters.audience"
                       :value="individualAudience"
                     />
-                    {{ individualAudience }}
+                    {{ individualAudience }} ({{ count }})
                   </label>
                 </template>
               </div>
@@ -140,33 +146,58 @@ export default {
       cards: eventsData.cards,
     };
   },
-
   computed: {
-    uniqueAudiencesSet() {
-      const deduplicatedAudiences = new Set();
-      this.uniqueAudiences.forEach((audience) => {
-        audience
+    uniqueAudiencesSetWithCount() {
+      const counts = {};
+      this.cards.forEach((card) => {
+        card.field_audience
           .split(",")
-          .map((a) => a.trim().replace(/&amp;/g, " ").replace(/amp;/g, " "))
-          .filter((a) => a)
-          .forEach((audienceItem) => deduplicatedAudiences.add(audienceItem));
+          .map((audience) => audience.trim())
+          .forEach((audienceItem) => {
+            if (counts[audienceItem]) {
+              counts[audienceItem]++;
+            } else {
+              counts[audienceItem] = 1;
+            }
+          });
       });
-      return [...deduplicatedAudiences];
+      return counts;
     },
-    uniqueStartDates() {
-      return [
-        ...new Set(this.cards.map((card) => card.field_event_start_date)),
-      ];
+    uniqueStartDatesWithCount() {
+      const counts = {};
+      this.cards.forEach((card) => {
+        if (counts[card.field_event_start_date]) {
+          counts[card.field_event_start_date]++;
+        } else {
+          counts[card.field_event_start_date] = 1;
+        }
+      });
+      return counts;
     },
-    uniqueEventTypes() {
-      return [...new Set(this.cards.map((card) => card.field_event_type))];
+    uniqueEventTypesWithCount() {
+      const counts = {};
+      this.cards.forEach((card) => {
+        if (counts[card.field_event_type]) {
+          counts[card.field_event_type]++;
+        } else {
+          counts[card.field_event_type] = 1;
+        }
+      });
+      return counts;
     },
     uniqueAudiences() {
-      return [...new Set(this.cards.map((card) => card.field_audience))];
+      return [
+        ...new Set(
+          this.cards.flatMap((card) =>
+            card.field_audience.split(",").map((a) => a.trim())
+          )
+        ),
+      ];
     },
 
     filteredCards() {
       return this.cards.filter((card) => {
+        // Check if the search query matches the card title
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
@@ -175,12 +206,28 @@ export default {
         }
 
         const { data, event, audience } = this.filters;
-        if (
-          (data.length && !data.includes(card.field_event_start_date)) ||
-          (event.length && !event.includes(card.field_event_type)) ||
-          (audience.length && !audience.includes(card.field_audience))
-        ) {
+
+        // Check data filter
+        if (data.length && !data.includes(card.field_event_start_date)) {
           return false;
+        }
+
+        // Check event filter
+        if (event.length && !event.includes(card.field_event_type)) {
+          return false;
+        }
+
+        // Check audience filter with multiple values separated by commas
+        if (audience.length) {
+          const audienceValues = card.field_audience
+            .split(",")
+            .map((value) => value.trim());
+          const audienceMatch = audience.some((aud) =>
+            audienceValues.includes(aud)
+          );
+          if (!audienceMatch) {
+            return false;
+          }
         }
 
         return true;
@@ -235,23 +282,11 @@ export default {
         }
       }
     },
-    getUniqueAudienceValues(audience) {
-      // Ensure audience is a string and split, trim, replace, filter, and return unique values
-      if (typeof audience !== "string") {
-        return [];
-      }
-      return [
-        ...new Set(
-          audience
-            .split(",")
-            .map((a) => a.trim().replace(/&amp;/g, " ").replace(/amp;/g, " "))
-            .filter((a) => a)
-        ),
-      ];
-    },
   },
 };
 </script>
+
+
 
 <style>
 /* Your existing styles */
@@ -262,6 +297,7 @@ export default {
   margin-left: -15px;
   width: calc(100% + 30px);
   overflow: hidden;
+  min-height: 300px;
 }
 .main {
   overflow: hidden;
