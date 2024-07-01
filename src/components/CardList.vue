@@ -131,7 +131,7 @@
 
       <div class="">
         <div v-if="paginatedCards.length > 0" class="cards">
-          <div v-for="card in paginatedCards" :key="card.field_id" class="card">
+          <div v-for="card in paginatedCards" :key="card.id" class="card">
             <h2>{{ card.title }}</h2>
             <p>Event Type: {{ card.field_event_type }}</p>
             <p>Audience: {{ card.field_audience }}</p>
@@ -176,6 +176,11 @@ export default {
         event: false,
         audience: false,
       },
+      filterdCardsData: {
+        data: [],
+        event: [],
+        audience: [],
+      },
       cards: [],
       currentPage: 1,
       perPage: 9,
@@ -185,7 +190,9 @@ export default {
     // Compute counts for unique data categories with their respective counts
     uniqueStartDatesWithCount() {
       const counts = {};
-      this.filteredCards.forEach((card) => {
+      const filteredData = this.filteredCards;
+
+      filteredData.forEach((card) => {
         if (card.field_event_start_date) {
           if (counts[card.field_event_start_date]) {
             counts[card.field_event_start_date]++;
@@ -194,12 +201,15 @@ export default {
           }
         }
       });
+
       return counts;
     },
-    // Compute counts for unique event types with their respective counts
+
     uniqueEventTypesWithCount() {
       const counts = {};
-      this.filteredCards.forEach((card) => {
+      const filteredData = this.filteredCards;
+
+      filteredData.forEach((card) => {
         if (card.field_event_type) {
           if (counts[card.field_event_type]) {
             counts[card.field_event_type]++;
@@ -208,12 +218,15 @@ export default {
           }
         }
       });
+
       return counts;
     },
-    // Compute counts for unique audiences with their respective counts
+
     uniqueAudiencesSetWithCount() {
       const counts = {};
-      this.filteredCards.forEach((card) => {
+      const filteredData = this.filteredCards;
+
+      filteredData.forEach((card) => {
         if (card.field_audience) {
           card.field_audience
             .split(",")
@@ -227,11 +240,13 @@ export default {
             });
         }
       });
+
       return counts;
     },
+
     // Filtered cards based on search query and selected filters
     filteredCards() {
-      const filtered = this.cards.filter((card) => {
+      return this.cards.filter((card) => {
         // Filter by search query
         if (
           this.searchQuery &&
@@ -270,26 +285,44 @@ export default {
 
         return true;
       });
-
-      return filtered;
     },
+
     // Paginated cards based on current page and per page count
+    // paginatedCards() {
+    //   const startIndex = (this.currentPage - 1) * this.perPage;
+    //   return this.filteredCards.slice(startIndex, startIndex + this.perPage);
+    // },
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
-      return this.filteredCards.slice(startIndex, startIndex + this.perPage);
+      const uniqueCards = [];
+
+      const seen = new Set();
+      for (let i = 0; i < this.filteredCards.length; i++) {
+        const card = this.filteredCards[i];
+        if (!seen.has(card.id)) {
+          seen.add(card.id);
+          uniqueCards.push(card);
+        }
+      }
+
+      return uniqueCards.slice(startIndex, startIndex + this.perPage);
     },
+
     // Total number of filtered cards
     totalCards() {
       return this.filteredCards.length;
     },
+
     // Total number of pages based on filtered cards and per page count
     totalPages() {
       return Math.ceil(this.filteredCards.length / this.perPage);
     },
+
     // Whether pagination should be displayed
     shouldShowPagination() {
       return this.totalCards > this.perPage;
     },
+
     // Selected filters to display
     selectedFilters() {
       const selected = [];
@@ -324,6 +357,19 @@ export default {
       return selected;
     },
   },
+  watch: {
+    filteredCards(newFilteredCards) {
+      this.filterdCardsData.data = newFilteredCards.filter(
+        (card) => card.field_event_start_date
+      );
+      this.filterdCardsData.event = newFilteredCards.filter(
+        (card) => card.field_event_type
+      );
+      this.filterdCardsData.audience = newFilteredCards.filter(
+        (card) => card.field_audience
+      );
+    },
+  },
   mounted() {
     // Set initial data from eventsData
     this.cards = eventsData.cards;
@@ -344,7 +390,25 @@ export default {
         }
       }
       this.showDropdown[category] = !this.showDropdown[category];
+
+      // Update counts of other dropdowns when closed
+      if (category !== "data" && !this.showDropdown.data) {
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      }
+      if (category !== "event" && !this.showDropdown.event) {
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      }
+      if (category !== "audience" && !this.showDropdown.audience) {
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      }
     },
+
     // Handle clicks outside dropdowns to close them
     handleDocumentClick(event) {
       let isDropdownClick = false;
@@ -368,6 +432,7 @@ export default {
         }
       }
     },
+
     // Remove selected filter
     removeSelectedFilter(filter) {
       const index = this.selectedFilters.findIndex(
@@ -383,12 +448,14 @@ export default {
         this.filters[filter.category].splice(filterIndex, 1);
       }
     },
+
     // Navigate to next page
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
+
     // Navigate to previous page
     prevPage() {
       if (this.currentPage > 1) {
