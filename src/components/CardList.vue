@@ -127,6 +127,7 @@
             </span>
           </span>
         </div>
+        <button @click="clearFilters">Clear Filters</button>
       </div>
 
       <div class="">
@@ -176,11 +177,6 @@ export default {
         event: false,
         audience: false,
       },
-      filterdCardsData: {
-        data: [],
-        event: [],
-        audience: [],
-      },
       cards: [],
       currentPage: 1,
       perPage: 9,
@@ -190,15 +186,12 @@ export default {
     // Compute counts for unique data categories with their respective counts
     uniqueStartDatesWithCount() {
       const counts = {};
-      const filteredData = this.filteredCards;
+      const cardsToCount = this.filteredCards;
 
-      filteredData.forEach((card) => {
+      cardsToCount.forEach((card) => {
         if (card.field_event_start_date) {
-          if (counts[card.field_event_start_date]) {
-            counts[card.field_event_start_date]++;
-          } else {
-            counts[card.field_event_start_date] = 1;
-          }
+          counts[card.field_event_start_date] =
+            (counts[card.field_event_start_date] || 0) + 1;
         }
       });
 
@@ -246,6 +239,7 @@ export default {
 
     // Filtered cards based on search query and selected filters
     filteredCards() {
+      console.log(this);
       return this.cards.filter((card) => {
         // Filter by search query
         if (
@@ -288,10 +282,6 @@ export default {
     },
 
     // Paginated cards based on current page and per page count
-    // paginatedCards() {
-    //   const startIndex = (this.currentPage - 1) * this.perPage;
-    //   return this.filteredCards.slice(startIndex, startIndex + this.perPage);
-    // },
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
       const uniqueCards = [];
@@ -357,19 +347,7 @@ export default {
       return selected;
     },
   },
-  watch: {
-    filteredCards(newFilteredCards) {
-      this.filterdCardsData.data = newFilteredCards.filter(
-        (card) => card.field_event_start_date
-      );
-      this.filterdCardsData.event = newFilteredCards.filter(
-        (card) => card.field_event_type
-      );
-      this.filterdCardsData.audience = newFilteredCards.filter(
-        (card) => card.field_audience
-      );
-    },
-  },
+
   mounted() {
     // Set initial data from eventsData
     this.cards = eventsData.cards;
@@ -381,7 +359,21 @@ export default {
     // Remove event listener when component is unmounted
     document.removeEventListener("click", this.handleDocumentClick);
   },
+
   methods: {
+    // Update filtered data when filteredCards change
+    updateFilteredData() {
+      this.filterdCardsData.data = this.filteredCards.filter(
+        (card) => card.field_event_start_date
+      );
+      this.filterdCardsData.event = this.filteredCards.filter(
+        (card) => card.field_event_type
+      );
+      this.filterdCardsData.audience = this.filteredCards.filter(
+        (card) => card.field_audience
+      );
+    },
+
     // Toggle dropdown visibility
     toggleDropdown(category) {
       for (let key in this.showDropdown) {
@@ -390,23 +382,6 @@ export default {
         }
       }
       this.showDropdown[category] = !this.showDropdown[category];
-
-      // Update counts of other dropdowns when closed
-      if (category !== "data" && !this.showDropdown.data) {
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
-      }
-      if (category !== "event" && !this.showDropdown.event) {
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
-      }
-      if (category !== "audience" && !this.showDropdown.audience) {
-        this.$nextTick(() => {
-          this.$forceUpdate();
-        });
-      }
     },
 
     // Handle clicks outside dropdowns to close them
@@ -447,6 +422,14 @@ export default {
       if (filterIndex !== -1) {
         this.filters[filter.category].splice(filterIndex, 1);
       }
+    },
+
+    // Clear all filters and search query
+    clearFilters() {
+      this.filters.data = [];
+      this.filters.event = [];
+      this.filters.audience = [];
+      this.searchQuery = "";
     },
 
     // Navigate to next page
