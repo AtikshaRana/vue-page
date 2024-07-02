@@ -98,7 +98,9 @@
             </div>
           </div>
         </div>
-
+        <button class="clear-filters-button" @click="clearFilters">
+          Clear Filters
+        </button>
         <div class="totalCards">
           <p>Total Cards: {{ totalCards }}</p>
         </div>
@@ -127,7 +129,6 @@
             </span>
           </span>
         </div>
-        <button @click="clearFilters">Clear Filters</button>
       </div>
 
       <div class="">
@@ -517,11 +518,29 @@ export default {
 
 
 <style>
+.clear-filters-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease-in-out;
+}
+
+.clear-filters-button:hover {
+  background-color: #4185b5;
+}
 .pagination {
   display: flex;
   align-items: center;
   justify-content: center;
   margin-top: 20px;
+  margin-bottom: 60px;
 }
 
 .pagination button {
