@@ -183,10 +183,77 @@ export default {
     };
   },
   computed: {
-    // Compute counts for unique data categories with their respective counts
+    filteredDataCards() {
+      return this.cards.filter((card) => {
+        if (
+          this.filters.event.length > 0 &&
+          !this.filters.event.includes(card.field_event_type)
+        ) {
+          return false;
+        }
+
+        if (this.filters.audience.length > 0) {
+          const audienceValues = card.field_audience
+            .split(",")
+            .map((value) => value.trim());
+          if (
+            !this.filters.audience.some((aud) => audienceValues.includes(aud))
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    },
+
+    filteredEventCards() {
+      return this.cards.filter((card) => {
+        if (
+          this.filters.data.length > 0 &&
+          !this.filters.data.includes(card.field_event_start_date)
+        ) {
+          return false;
+        }
+
+        if (this.filters.audience.length > 0) {
+          const audienceValues = card.field_audience
+            .split(",")
+            .map((value) => value.trim());
+          if (
+            !this.filters.audience.some((aud) => audienceValues.includes(aud))
+          ) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    },
+
+    filteredAudienceCards() {
+      return this.cards.filter((card) => {
+        if (
+          this.filters.data.length > 0 &&
+          !this.filters.data.includes(card.field_event_start_date)
+        ) {
+          return false;
+        }
+
+        if (
+          this.filters.event.length > 0 &&
+          !this.filters.event.includes(card.field_event_type)
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+    },
+
     uniqueStartDatesWithCount() {
       const counts = {};
-      const cardsToCount = this.filteredCards;
+      const cardsToCount = this.filteredDataCards;
 
       cardsToCount.forEach((card) => {
         if (card.field_event_start_date) {
@@ -200,9 +267,9 @@ export default {
 
     uniqueEventTypesWithCount() {
       const counts = {};
-      const filteredData = this.filteredCards;
+      const cardsToCount = this.filteredEventCards;
 
-      filteredData.forEach((card) => {
+      cardsToCount.forEach((card) => {
         if (card.field_event_type) {
           if (counts[card.field_event_type]) {
             counts[card.field_event_type]++;
@@ -217,9 +284,9 @@ export default {
 
     uniqueAudiencesSetWithCount() {
       const counts = {};
-      const filteredData = this.filteredCards;
+      const cardsToCount = this.filteredAudienceCards;
 
-      filteredData.forEach((card) => {
+      cardsToCount.forEach((card) => {
         if (card.field_audience) {
           card.field_audience
             .split(",")
@@ -237,11 +304,9 @@ export default {
       return counts;
     },
 
-    // Filtered cards based on search query and selected filters
     filteredCards() {
       console.log(this);
       return this.cards.filter((card) => {
-        // Filter by search query
         if (
           this.searchQuery &&
           !card.title.toLowerCase().includes(this.searchQuery.toLowerCase())
@@ -249,7 +314,6 @@ export default {
           return false;
         }
 
-        // Filter by data category
         if (
           this.filters.data.length > 0 &&
           !this.filters.data.includes(card.field_event_start_date)
@@ -257,7 +321,6 @@ export default {
           return false;
         }
 
-        // Filter by event category
         if (
           this.filters.event.length > 0 &&
           !this.filters.event.includes(card.field_event_type)
@@ -265,7 +328,6 @@ export default {
           return false;
         }
 
-        // Filter by audience category
         if (this.filters.audience.length > 0) {
           const audienceValues = card.field_audience
             .split(",")
@@ -281,7 +343,6 @@ export default {
       });
     },
 
-    // Paginated cards based on current page and per page count
     paginatedCards() {
       const startIndex = (this.currentPage - 1) * this.perPage;
       const uniqueCards = [];
@@ -298,22 +359,18 @@ export default {
       return uniqueCards.slice(startIndex, startIndex + this.perPage);
     },
 
-    // Total number of filtered cards
     totalCards() {
       return this.filteredCards.length;
     },
 
-    // Total number of pages based on filtered cards and per page count
     totalPages() {
       return Math.ceil(this.filteredCards.length / this.perPage);
     },
 
-    // Whether pagination should be displayed
     shouldShowPagination() {
       return this.totalCards > this.perPage;
     },
 
-    // Selected filters to display
     selectedFilters() {
       const selected = [];
 
@@ -349,19 +406,14 @@ export default {
   },
 
   mounted() {
-    // Set initial data from eventsData
     this.cards = eventsData.cards;
-
-    // Add event listener to handle clicks outside dropdowns
     document.addEventListener("click", this.handleDocumentClick);
   },
   beforeUnmount() {
-    // Remove event listener when component is unmounted
     document.removeEventListener("click", this.handleDocumentClick);
   },
 
   methods: {
-    // Update filtered data when filteredCards change
     updateFilteredData() {
       this.filterdCardsData.data = this.filteredCards.filter(
         (card) => card.field_event_start_date
@@ -374,7 +426,6 @@ export default {
       );
     },
 
-    // Toggle dropdown visibility
     toggleDropdown(category) {
       for (let key in this.showDropdown) {
         if (key !== category) {
@@ -384,7 +435,6 @@ export default {
       this.showDropdown[category] = !this.showDropdown[category];
     },
 
-    // Handle clicks outside dropdowns to close them
     handleDocumentClick(event) {
       let isDropdownClick = false;
       const dropdownButtons = document.querySelectorAll(".dropdown-button");
@@ -408,7 +458,12 @@ export default {
       }
     },
 
-    // Remove selected filter
+    resetPage() {
+      if (this.currentPage > 1) {
+        this.currentPage = 1;
+      }
+    },
+
     removeSelectedFilter(filter) {
       const index = this.selectedFilters.findIndex(
         (selected) =>
@@ -422,28 +477,39 @@ export default {
       if (filterIndex !== -1) {
         this.filters[filter.category].splice(filterIndex, 1);
       }
+      this.resetPage();
     },
 
-    // Clear all filters and search query
     clearFilters() {
       this.filters.data = [];
       this.filters.event = [];
       this.filters.audience = [];
       this.searchQuery = "";
+      this.resetPage();
     },
 
-    // Navigate to next page
     nextPage() {
       if (this.currentPage < this.totalPages) {
         this.currentPage++;
       }
     },
 
-    // Navigate to previous page
     prevPage() {
       if (this.currentPage > 1) {
         this.currentPage--;
       }
+    },
+  },
+
+  watch: {
+    searchQuery() {
+      this.resetPage();
+    },
+    filters: {
+      deep: true,
+      handler() {
+        this.resetPage();
+      },
     },
   },
 };
