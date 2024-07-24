@@ -1,3 +1,107 @@
+main {
+  min-height: calc(100vh - 474px);
+}
+h1 {
+  font-size: 60px !important;
+  line-height: 84.6px;
+  font-weight: 600 !important;
+  text-transform: capitalize;
+  overflow: hidden;
+}
+h2 {
+  font-size: 50px !important;
+  line-height: 65px;
+  font-weight: 500;
+  overflow: hidden;
+}
+.text_gradient {
+  font-weight: 500;
+  background: linear-gradient(to right, #0075ff, #8000ff);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.text_gradient2 {
+  font-weight: 500;
+  background: linear-gradient(to right, #8000ff, #0075ff);
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+h3 {
+  font-size: 35px !important;
+  line-height: 46px;
+  font-weight: 500;
+}
+h4 {
+  font-size: 24px !important;
+  font-size: 22px;
+  line-height: 31px;
+  font-weight: 500 !important;
+}
+h5 {
+  font-size: 18px !important;
+  font-weight: 500;
+  line-height: 31px !important;
+}
+h6 {
+  font-size: 16px !important;
+  font-size: 17px;
+  font-weight: 400 !important;
+  line-height: 30px;
+}
+p {
+  font-size: 16px !important;
+  line-height: 28px;
+  font-weight: 300 !important;
+}
+
+span {
+  font-size: 14px;
+  font-weight: 400;
+}
+ul {
+  list-style: none;
+  li {
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 30px;
+  }
+}
+section {
+  position: relative;
+  width: 100%;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #000;
+  }
+  p,
+  &.bg-purple,
+  &.opalGreen,
+  &.orange,
+  &.peach,
+  &.pink {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    span {
+      color: #fff;
+    }
+  }
+}
+.container {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1188px;
+  padding: 0 20px;
+}
+
 .color-circle {
   width: 50px;
   height: 50px;

@@ -1,5 +1,5 @@
 <template>
-  <div class="main">
+  <section class="filter">
     <!-- Search Bar -->
     <div class="container">
       <div class="searchAndDropdown">
@@ -134,7 +134,7 @@
       <div class="">
         <div v-if="paginatedCards.length > 0" class="cards">
           <div v-for="card in paginatedCards" :key="card.id" class="card">
-            <h2>{{ card.title }}</h2>
+            <h3>{{ card.title }}</h3>
             <p>Event Type: {{ card.field_event_type }}</p>
             <p>Audience: {{ card.field_audience }}</p>
             <p>Location: {{ card.field_designation }}</p>
@@ -144,7 +144,7 @@
           </div>
         </div>
         <div v-else>
-          <h2>No cards available.</h2>
+          <h3>No cards available.</h3>
         </div>
       </div>
       <!-- Pagination Controls -->
@@ -158,7 +158,7 @@
         </button>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script>
@@ -615,7 +615,7 @@ export default {
 .dropdown button {
   font-size: 16px;
 }
-h2 {
+h3 {
   color: #4185b5;
 }
 .dropdown-button {

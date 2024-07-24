@@ -1,61 +1,28 @@
 <template>
-  <div>
-    <h1>Item List</h1>
-    <div class="filters">
-      <label>
-        <input type="checkbox" v-model="filters.categoryA" />
-        Category A
-      </label>
-      <label>
-        <input type="checkbox" v-model="filters.categoryB" />
-        Category B
-      </label>
-      <label>
-        <input type="checkbox" v-model="filters.categoryC" />
-        Category C
-      </label>
-    </div>
-    <ul>
-      <li v-for="item in filteredItems" :key="item.id">{{ item.name }}</li>
-    </ul>
-  </div>
+  <section
+    class="banner-with-img banner_overlay relative overflow-x-hidden bg-darkBlue flex items-end text-white z-[1] pt-28 pb-24 min-h-[752px] desktop:min-h-[630px] tablet:min-h-[560px] tablet:pt-24 tablet:pb-14 md:min-h-[552px] md:pt-24 md:pb-12 md:items-center"
+  ></section>
 </template>
 
 <script>
 export default {
+  props: {
+    data: {
+      type: Object,
+      required: true,
+    },
+  },
   data() {
     return {
-      items: [
-        { id: 1, name: "Item 1", category: "A" },
-        { id: 2, name: "Item 2", category: "B" },
-        { id: 3, name: "Item 3", category: "A" },
-        { id: 4, name: "Item 4", category: "C" },
-        { id: 5, name: "Item 5", category: "B" },
-      ],
-      filters: {
-        categoryA: false,
-        categoryB: false,
-        categoryC: false,
-      },
+      // BannerImage: require("../assets/green-socks.png"),
+      // bannerLeftImg: require("../assets/green-socks.png"),
+      mainTitle: "xyg",
+      buttonText: "xyg",
     };
-  },
-  computed: {
-    filteredItems() {
-      return this.items.filter((item) => {
-        if (this.filters.categoryA && item.category === "A") return true;
-        if (this.filters.categoryB && item.category === "B") return true;
-        if (this.filters.categoryC && item.category === "C") return true;
-        return false;
-      });
-    },
   },
 };
 </script>
 
-<style>
-.filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
+<style scoped>
+/* Add your CSS styles here */
 </style>
